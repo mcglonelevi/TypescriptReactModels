@@ -1,4 +1,5 @@
 import { Model } from "./model";
+import * as yup from 'yup';
 
 export interface IncomeSource {
     name: string;
@@ -12,23 +13,37 @@ export interface Applicant {
     incomeSources: IncomeSource[];
 };
 
-export interface Property {
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-};
-
-export interface MortgageApplication {
+export type MortgageApplication = {
     borrower: Applicant;
     coBorrower: Applicant;
-    property: Property;
 };
 
+type MortgageApplicationSchema = yup.SchemaOf<MortgageApplication>;
+
 export class MortgageApplicationRecord extends Model {
+    static validations: MortgageApplicationSchema = yup.object({
+        borrower: yup.object({
+            firstName: yup.string().required(),
+            lastName: yup.string().required(),
+            married: yup.boolean().required(),
+            incomeSources: yup.array().required().min(1).of(yup.object({
+                name: yup.string().required(),
+                yearlyAmount: yup.number().required(),
+            })),
+        }).required(),
+        coBorrower: yup.object({
+            firstName: yup.string().required(),
+            lastName: yup.string().required(),
+            married: yup.boolean().required(),
+            incomeSources: yup.array().required().min(1).of(yup.object({
+                name: yup.string().required(),
+                yearlyAmount: yup.number().min(1).required(),
+            })),
+        }).required(),
+    }).required();
+
     borrower!: Applicant;
     coBorrower!: Applicant;
-    property!: Property;
 
     constructor(application: MortgageApplication) {
         super();
