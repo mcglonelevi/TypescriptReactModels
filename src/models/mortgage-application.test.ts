@@ -77,7 +77,7 @@ test('returns error result when invalid', () => {
     expect(result.success).toEqual(false);
     expect(result.errors).toBeInstanceOf(Map);
     const errors = result.errors as Map<string, string[]>;
-    expect(errors.get('borrower.firstName')).toEqual(['borrower.firstName is a required field']);
+    expect(errors.get('borrower.firstName')).toEqual(['First Name is a required field']);
 });
 
 test('returns success result when valid', () => {

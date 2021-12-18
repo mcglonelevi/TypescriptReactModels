@@ -1,6 +1,7 @@
 import React from 'react';
 import { MortgageApplicationRecord } from './models/mortgage-application';
 import { useImmer, Updater } from 'use-immer';
+import { useState } from 'react';
 
 const initialApplication = new MortgageApplicationRecord({
   borrower: {
@@ -15,12 +16,6 @@ const initialApplication = new MortgageApplicationRecord({
       married: false,
       incomeSources: [],
   },
-  property: {
-      city: '',
-      state: '',
-      zip: '',
-      address: '',
-  },
 });
 
 interface BorrowerFormProps {
@@ -28,9 +23,10 @@ interface BorrowerFormProps {
   heading: string;
   nestedProperty: 'borrower'|'coBorrower',
   setApp: Updater<MortgageApplicationRecord>;
+  errors: Map<string, string[]>|null;
 };
 
-function BorrowerForm({ app, setApp, heading, nestedProperty }: BorrowerFormProps) {  
+function BorrowerForm({ app, setApp, heading, nestedProperty, errors }: BorrowerFormProps) {  
   return (
     <div>
       <h1>{heading}</h1>
@@ -40,12 +36,14 @@ function BorrowerForm({ app, setApp, heading, nestedProperty }: BorrowerFormProp
         value={app[nestedProperty].firstName}
         onChange={(e) => setApp((draft) => { draft[nestedProperty].firstName = e.target.value; })}
       />
+      <ErrorDisplay errors={errors} property={`${nestedProperty}.firstName`} />
       <p>Last Name</p>
       <input
         type="text"
         value={app[nestedProperty].lastName}
         onChange={(e) => setApp((draft) => { draft[nestedProperty].lastName = e.target.value; })}
       />
+      <ErrorDisplay errors={errors} property={`${nestedProperty}.lastName`} />
       <p>Married</p>
       <select
         value={app[nestedProperty].married ? 'Married' : 'Single'}
@@ -65,6 +63,7 @@ function BorrowerForm({ app, setApp, heading, nestedProperty }: BorrowerFormProp
                 value={incomeSource.name}
                 onChange={(e) => setApp((draft) => { draft[nestedProperty].incomeSources[index].name = e.target.value; })}
               />
+              <ErrorDisplay errors={errors} property={`${nestedProperty}.incomeSources[${index}].name`} />
               <p>Yearly Salary</p>
               <input
                 type="text"
@@ -72,6 +71,7 @@ function BorrowerForm({ app, setApp, heading, nestedProperty }: BorrowerFormProp
                 // Quick and dirty type-casting...
                 onChange={(e) => setApp((draft) => { draft[nestedProperty].incomeSources[index].yearlyAmount = Number(e.target.value); })}
               />
+              <ErrorDisplay errors={errors} property={`${nestedProperty}.incomeSources[${index}].yearlyAmount`} />
               <button
                 type="button"
                 onClick={() => {
@@ -93,13 +93,33 @@ function BorrowerForm({ app, setApp, heading, nestedProperty }: BorrowerFormProp
         >
           Add Income Source
         </button>
+        <ErrorDisplay errors={errors} property={`${nestedProperty}.incomeSources`} />
       </div>
+    </div>
+  );
+}
+
+interface ErrorDisplayProps {
+  property: string;
+  errors: Map<string, string[]>|null;
+};
+
+function ErrorDisplay({property, errors}: ErrorDisplayProps) {
+  if (!errors || !errors.get(property)) {
+    return null;
+  }
+  return (
+    <div>
+      <p style={{ color: 'red' }}>{errors.get(property)}</p>
     </div>
   );
 }
 
 function App() {
   const [app, setApp] = useImmer(initialApplication);
+  const [errors, setErrors] = useState<Map<string, string[]>|null>(null);
+
+  console.log(errors);
 
   return (
     <>
@@ -108,13 +128,25 @@ function App() {
         setApp={setApp}
         heading='Borrower'
         nestedProperty='borrower'
+        errors={errors}
       />
       <BorrowerForm
         app={app}
         setApp={setApp}
         heading='Co-Borrower'
         nestedProperty='coBorrower'
+        errors={errors}
       />
+      <div>
+        <button type={'button'} onClick={() => {
+          const validationResult = app.validate();
+          if (validationResult.success) {
+            setErrors(null);
+          } else {
+            setErrors(validationResult.errors);
+          }
+        }}>Submit</button>
+      </div>
     </>
   );
 }

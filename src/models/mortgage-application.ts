@@ -18,28 +18,20 @@ export type MortgageApplication = {
     coBorrower: Applicant;
 };
 
-type MortgageApplicationSchema = yup.SchemaOf<MortgageApplication>;
+const borrowerSchema = yup.object({
+    firstName: yup.string().required().label('First Name'),
+    lastName: yup.string().required().label('Last Name'),
+    married: yup.boolean().required().label('married'),
+    incomeSources: yup.array().required().min(1).label('Income Sources').of(yup.object({
+        name: yup.string().required().label('Employer Name'),
+        yearlyAmount: yup.number().required().min(1).label('Salary'),
+    })),
+}).required();
 
 export class MortgageApplicationRecord extends Model {
-    static validations: MortgageApplicationSchema = yup.object({
-        borrower: yup.object({
-            firstName: yup.string().required(),
-            lastName: yup.string().required(),
-            married: yup.boolean().required(),
-            incomeSources: yup.array().required().min(1).of(yup.object({
-                name: yup.string().required(),
-                yearlyAmount: yup.number().required(),
-            })),
-        }).required(),
-        coBorrower: yup.object({
-            firstName: yup.string().required(),
-            lastName: yup.string().required(),
-            married: yup.boolean().required(),
-            incomeSources: yup.array().required().min(1).of(yup.object({
-                name: yup.string().required(),
-                yearlyAmount: yup.number().min(1).required(),
-            })),
-        }).required(),
+    static validations = yup.object({
+        borrower: borrowerSchema,
+        coBorrower: borrowerSchema,
     }).required();
 
     borrower!: Applicant;
